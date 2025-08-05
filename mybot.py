@@ -14,7 +14,7 @@ load_dotenv()
 
 phi.api=os.getenv("PHI_API_KEY")
 
-API_KEY = "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"
+API_KEY = "ADD KEY"
 
 model_id = "meta-llama/Llama-4-Maverick-17B-128E-Instruct"
 
