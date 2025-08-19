@@ -5,6 +5,7 @@ from phi.tools.yfinance import YFinanceTools
 from phi.tools.duckduckgo import DuckDuckGo
 from dotenv import load_dotenv
 from phi.model.groq import Groq
+from phi.tools.file import FileTools
 
 import os
 import phi
@@ -14,9 +15,10 @@ load_dotenv()
 
 phi.api=os.getenv("PHI_API_KEY")
 
-API_KEY = "ADD KEY"
+API_KEY = "ADD GROQ KEY"
 
-model_id = "meta-llama/Llama-4-Maverick-17B-128E-Instruct"
+model_id = "qwen/qwen3-32b"
+model_id2 = "meta-llama/Llama-4-Maverick-17B-128E-Instruct"
 
 ## web search agent
 web_search_agent = Agent(
@@ -33,7 +35,7 @@ web_search_agent = Agent(
 ## Financial agent
 finance_agent = Agent(
     name="Finance AI Agent",
-    model=Groq(id=model_id, api_key=API_KEY),
+    model=Groq(id=model_id2, api_key=API_KEY),
     role="Analyze financial data",
     tools=[
         YFinanceTools(
@@ -64,12 +66,6 @@ finance_agent = Agent(
         Your reporting style:
         - Begin with an executive summary
         - Use tables for data presentation
-        - Include clear section headers
-        - Add emoji indicators for trends (📈 📉)
-        - Highlight key insights with bullet points
-        - Compare metrics to industry averages
-        - Include technical term explanations
-        - End with a forward-looking analysis
 
         Risk Disclosure:
         - Always highlight potential risk factors
@@ -82,9 +78,25 @@ finance_agent = Agent(
     markdown=True,
 )
 
+## Reporting Financial agent
+reporting_agent = Agent(
+    name="Reporting Agent",
+    model=Groq(id=model_id, api_key=API_KEY),
+    role="structure financial data and generate reports",
+    tools=[FileTools()],
+    instructions=dedent("""\
+      Structure financial data and generate reports using tables.
+      Save the result as a HTML file under ./reports/<filename>.html in the project.
+      Do not access system root paths. Use the provided file tool to write files.
+    """),
+    show_tool_calls=True,
+    markdown=True,
+)
+
+
 multi_ai_agent = Agent(
     name="Stock Analysis Agent",
-    team=[web_search_agent, finance_agent],
+    team=[web_search_agent, finance_agent, reporting_agent],
     model=Groq(id=model_id, api_key=API_KEY),
     instructions=[
         "Use the web search agent to find information about the company and the financial agent to find information about the stock.",
@@ -96,6 +108,7 @@ multi_ai_agent = Agent(
 
 app=Playground(agents=[multi_ai_agent]).get_app()
 if __name__ == "__main__":
-    serve_playground_app("mybot:app",host="0.0.0.0",reload=True)
+    serve_playground_app("mybot:app",host="localhost",reload=True)
 
 
+#multi_ai_agent.print_response("Summarize analyst recommendations and latest news for NVDA.", stream=True)
